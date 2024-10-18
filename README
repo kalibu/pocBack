@@ -1,0 +1,3 @@
+## Aplicação simples para testes com docker
+docker build -t kalibu/poc-back .
+docker run -p 8080:8080 kalibu/poc-back
