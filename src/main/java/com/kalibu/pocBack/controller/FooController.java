@@ -2,6 +2,7 @@ package com.kalibu.pocBack.controller;
 
 import com.kalibu.pocBack.model.FooModel;
 import com.kalibu.pocBack.repository.FooRepository;
+import com.kalibu.pocBack.vo.FooVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -14,10 +15,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.java.Log;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,7 +29,6 @@ import java.util.List;
 @Log
 public class FooController {
 
-    private static final Logger log = LoggerFactory.getLogger(FooController.class);
     @Autowired
     private FooRepository fooRepository;
 
@@ -59,7 +58,7 @@ public class FooController {
     )
     @GetMapping("/all")
     public List<FooModel> getAll(@RequestParam(required = false) String order) {
-        log.info("/all, order={}", order);
+        log.info("/all, order=" + order);
 
         if (StringUtils.isBlank(order)) {
             return fooRepository.findAll();
@@ -75,6 +74,26 @@ public class FooController {
 
         }
 
+    }
+
+    @Operation(
+            operationId = "/create",
+            summary = "Create new foo",
+            description = "Create new foo",
+            tags = {"foo"},
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "success", content = {
+                            @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = FooModel.class)))
+                    })
+            }
+    )
+    @PostMapping("/create")
+    public ResponseEntity<FooModel> create(@RequestBody FooVO vo) {
+        log.info("/create, vo=" + vo);
+
+        final FooModel model = fooRepository.save(new FooModel(vo.fooProperty()));
+
+        return ResponseEntity.ok(model);
     }
 
 }

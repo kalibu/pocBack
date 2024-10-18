@@ -1,36 +1,49 @@
 package com.kalibu.pocBack;
 
+import com.kalibu.pocBack.config.SecurityConfiguration;
 import com.kalibu.pocBack.model.FooModel;
-import com.kalibu.pocBack.model.UserCredentialModel;
+import com.kalibu.pocBack.model.RoleModel;
+import com.kalibu.pocBack.model.UserModel;
+import com.kalibu.pocBack.model.enums.RoleName;
 import com.kalibu.pocBack.repository.FooRepository;
-import com.kalibu.pocBack.repository.UserCredentialRepository;
+import com.kalibu.pocBack.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.UUID;
 
 @Component
 public class DataLoader implements CommandLineRunner {
 
-    private final FooRepository fooRepository;
+    @Autowired
+    private FooRepository fooRepository;
 
-    private final UserCredentialRepository userCredentialRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-    public DataLoader(FooRepository fooRepository, UserCredentialRepository userCredentialRepository) {
-        this.fooRepository = fooRepository;
-        this.userCredentialRepository = userCredentialRepository;
-    }
+    @Autowired
+    private SecurityConfiguration securityConfiguration;
 
     @Override
     public void run(String... args) {
 
         //create user for test
-        UserCredentialModel userCredentialModel = new UserCredentialModel();
-        userCredentialModel.setEmail("test@kalibu.com");
-        userCredentialModel.setPassword("test");
-        userCredentialModel.setFirstName("Test");
-        userCredentialModel.setLastName("Kalibu");
-        userCredentialRepository.save(userCredentialModel);
+        UserModel userModel =
+        UserModel
+                .builder()
+                .email("test@kalibu.com")
+                .password(securityConfiguration.passwordEncoder().encode("test"))
+                .firstName("Test")
+                .lastName("Kalibu")
+                .roles(
+                        List.of(
+                                RoleModel.builder().name(RoleName.ROLE_ADMINISTRATOR).build(),
+                                RoleModel.builder().name(RoleName.ROLE_FOO).build()
+                        ))
+                .build();
+        userRepository.save(userModel);
 
         //create foos
         for (int i = 0; i < 10; i++) {

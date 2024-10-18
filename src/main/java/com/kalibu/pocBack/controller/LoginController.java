@@ -1,35 +1,23 @@
 package com.kalibu.pocBack.controller;
 
+import com.kalibu.pocBack.config.SecurityConfiguration;
 import com.kalibu.pocBack.exception.ApiError;
-import com.kalibu.pocBack.model.FooModel;
-import com.kalibu.pocBack.model.UserCredentialModel;
-import com.kalibu.pocBack.repository.FooRepository;
-import com.kalibu.pocBack.repository.UserCredentialRepository;
-import com.kalibu.pocBack.vo.UserCredentialResponseVO;
-import com.kalibu.pocBack.vo.UserCredentialVO;
+import com.kalibu.pocBack.model.UserModel;
+import com.kalibu.pocBack.repository.UserRepository;
+import com.kalibu.pocBack.vo.UserResponseVO;
+import com.kalibu.pocBack.vo.UserVO;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
-import io.swagger.v3.oas.annotations.enums.ParameterStyle;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.java.Log;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Objects;
 
 @RestController
 @RequestMapping("/v1/login")
@@ -38,9 +26,11 @@ import java.util.Objects;
 @Log
 public class LoginController {
 
-    private static final Logger log = LoggerFactory.getLogger(LoginController.class);
     @Autowired
-    private UserCredentialRepository userCredentialRepository;
+    private UserRepository userCredentialRepository;
+
+    @Autowired
+    private SecurityConfiguration securityConfiguration;
 
     @Operation(
             operationId = "/sign-in",
@@ -49,7 +39,7 @@ public class LoginController {
             tags = {"login"},
             responses = {
                     @ApiResponse(responseCode = "200", description = "success", content = {
-                            @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = UserCredentialResponseVO.class)))
+                            @Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = UserResponseVO.class)))
                     }),
                     @ApiResponse(responseCode = "404", description = "error", content = {
                             @Content(mediaType = "application/json")
@@ -57,18 +47,20 @@ public class LoginController {
             }
     )
     @PostMapping("/sign-in")
-    public ResponseEntity<UserCredentialResponseVO> signIn(@RequestBody UserCredentialVO vo) {
-        log.info("/signIn, vo={}", vo);
+    public ResponseEntity<UserResponseVO> signIn(@RequestBody UserVO vo) {
+        log.info("/signIn, vo=" + vo);
 
-        final UserCredentialModel user = userCredentialRepository
-                .findByEmailAndPassword(vo.getEmail(), vo.getPassword())
+        final UserModel user = userCredentialRepository
+                .findByEmailAndPassword(
+                        vo.email(),
+                        securityConfiguration.passwordEncoder().encode(vo.password()))
                 .orElseThrow(EntityNotFoundException::new);
 
-        final UserCredentialResponseVO response = new UserCredentialResponseVO();
-        response.setUserId(user.getId());
-        response.setFirstName(user.getFirstName());
-        response.setLastName(user.getLastName());
-        response.setEmail(user.getEmail());
+        final UserResponseVO response = new UserResponseVO(
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail());
 
         return ResponseEntity.ok(response);
     }
